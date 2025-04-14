@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = "postgresql://neondb_owner:npg_YBjfG31tHdXE@ep-shiny-sky-a5zfvcmh-pooler.us-east-2.aws.neon.tech/neondb?sslmode=require"
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String    
+  role            String    @default("USER")
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  sessions        Session[]
+  transactions    Transaction[]
+  shipments       Shipment[]
+}
+
+
+model Session {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  token           String   @unique
+  expiresAt       DateTime
+  createdAt       DateTime @default(now())
+}
+
+model Company {
+  id             String       @id @default(uuid())
+  name           String
+  type           String
+  email          String  @unique
+  passwordHash   String  
+
+  contactDetails String
+  transactions   Transaction[]
+  products       Product[]
+  shipments      Shipment[]
+}
+
+model ProductCategory {
+  hsCode   String @id
+  category String
+  products Product[]
+}
+
+model Product {
+  id        String  @id @default(uuid())
+  name      String
+  stock     Int     @default(0)
+  unitCost  Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  hsCode    String
+  category  ProductCategory @relation(fields: [hsCode], references: [hsCode]) 
+
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id])
+  shipments Shipment[]
+}
+
+model Shipment {
+  id                String   @id @default(uuid())
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id])
+  quantity          Int
+  originPort        String
+  destinationPort   String
+  status            String
+  estimatedDelivery DateTime?
+
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+
+  companyId         String
+  company           Company   @relation(fields: [companyId], references: [id])
+   customs           Customs?
+}
+
+model Customs {
+  id              String  @id @default(uuid())
+  shipmentId      String  @unique
+  shipment        Shipment @relation(fields: [shipmentId], references: [id])
+  dutyPaid        Float
+  tariffPercent   Float
+  complianceStatus String
+}
+
+model Transaction {
+  id            String   @id @default(uuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id])
+  invoiceNumber String
+  amount        Float
+  status        String
+  currency      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+}
